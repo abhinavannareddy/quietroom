@@ -11,8 +11,13 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 BUILD_DIR="${BUILD_DIR:-build}"
-PYTHON="${PYTHON:-python3}"
-command -v "$PYTHON" >/dev/null || PYTHON=python
+# Pick the first interpreter that really runs (on Windows, python3 can be a Store stub that does not).
+if [ -z "${PYTHON:-}" ]; then
+  for candidate in python3 python py; do
+    if "$candidate" -c "import sys" >/dev/null 2>&1; then PYTHON="$candidate"; break; fi
+  done
+fi
+[ -n "${PYTHON:-}" ] || { echo "no working python found; set PYTHON=/path/to/python" >&2; exit 1; }
 
 cmake -S . -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Release
 cmake --build "$BUILD_DIR" --parallel
@@ -30,8 +35,12 @@ done
 
 mkdir -p docs/results
 "$BENCH" --benchmark_out=docs/results/bench.json --benchmark_out_format=json
+"$PYTHON" python/scrub_bench_json.py docs/results/bench.json
 
-COMPILER="$(grep -m1 '^CMAKE_CXX_COMPILER:' "$BUILD_DIR/CMakeCache.txt" | cut -d= -f2)"
+COMPILER_PATH="$(grep -m1 '^CMAKE_CXX_COMPILER:' "$BUILD_DIR/CMakeCache.txt" | cut -d= -f2)"
+# Record the compiler's own version line, not the path to it.
+COMPILER="$("$COMPILER_PATH" --version 2>/dev/null | head -1)"
+[ -n "$COMPILER" ] || COMPILER="$(basename "$COMPILER_PATH")"
 FLAGS="$(grep -m1 '^CMAKE_CXX_FLAGS_RELEASE:' "$BUILD_DIR/CMakeCache.txt" | cut -d= -f2)"
 "$PYTHON" python/evaluate.py --cli "$CLI" --compiler "$COMPILER" --flags "$FLAGS -std=c++17"
 "$PYTHON" python/plot_pipeline.py

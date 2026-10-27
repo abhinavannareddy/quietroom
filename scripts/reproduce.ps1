@@ -23,9 +23,13 @@ if (-not $cli -or -not $bench) { throw "could not find the built CLI or benchmar
 
 New-Item -ItemType Directory -Force docs\results | Out-Null
 & $bench --benchmark_out=docs/results/bench.json --benchmark_out_format=json
+python python\scrub_bench_json.py docs/results/bench.json
 
 $cache = Get-Content "$BuildDir\CMakeCache.txt"
-$compiler = ($cache | Where-Object { $_ -like "CMAKE_CXX_COMPILER:*" } | Select-Object -First 1) -replace "^[^=]*=", ""
+$compilerPath = ($cache | Where-Object { $_ -like "CMAKE_CXX_COMPILER:*" } | Select-Object -First 1) -replace "^[^=]*=", ""
+# Record the compiler's own version line, not the path to it.
+$compiler = (& $compilerPath --version 2>$null | Select-Object -First 1)
+if (-not $compiler) { $compiler = Split-Path -Leaf $compilerPath }
 $flags = ($cache | Where-Object { $_ -like "CMAKE_CXX_FLAGS_RELEASE:*" } | Select-Object -First 1) -replace "^[^=]*=", ""
 python python\evaluate.py --cli $cli --compiler $compiler --flags "$flags -std=c++17"
 python python\plot_pipeline.py
