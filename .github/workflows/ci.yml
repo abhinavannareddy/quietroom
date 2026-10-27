@@ -1,7 +1,11 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
@@ -14,7 +18,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         build_type: [Release, Debug]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
       - name: Build
@@ -26,7 +30,7 @@ jobs:
         run: ./build/bench/quietroom_bench --benchmark_format=json --benchmark_out=bench-${{ matrix.os }}.json
       - name: Upload benchmark JSON
         if: matrix.build_type == 'Release'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: bench-${{ matrix.os }}
           path: bench-${{ matrix.os }}.json
@@ -35,8 +39,17 @@ jobs:
     name: ASan + UBSan (Debug)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DQUIETROOM_SANITIZE=ON -DQUIETROOM_BUILD_BENCH=OFF
+      - run: cmake --build build --parallel
+      - run: ctest --test-dir build --output-on-failure
+
+  double-precision:
+    name: QUIETROOM_DOUBLE=ON (Release)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DQUIETROOM_DOUBLE=ON -DQUIETROOM_BUILD_BENCH=OFF
       - run: cmake --build build --parallel
       - run: ctest --test-dir build --output-on-failure
 
@@ -44,7 +57,7 @@ jobs:
     name: clang-format + clang-tidy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: clang-format
         run: find include src cli bench tests -name '*.[ch]pp' | xargs clang-format --dry-run -Werror
       - name: clang-tidy
