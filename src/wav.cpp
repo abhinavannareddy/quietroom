@@ -40,8 +40,20 @@ bool read_wav(const std::string& path, WavData& out, std::string& error) {
         error = "cannot open " + path;
         return false;
     }
-    const std::vector<unsigned char> buf((std::istreambuf_iterator<char>(file)),
-                                         std::istreambuf_iterator<char>());
+    file.seekg(0, std::ios::end);
+    const std::streamoff file_size = file.tellg();
+    if (file_size < 0 || static_cast<std::uint64_t>(file_size) > kMaxWavBytes) {
+        error = path + " is not a regular file or is larger than " +
+                std::to_string(kMaxWavBytes >> 20) + " MiB";
+        return false;
+    }
+    file.seekg(0, std::ios::beg);
+    std::vector<unsigned char> buf(static_cast<std::size_t>(file_size));
+    file.read(reinterpret_cast<char*>(buf.data()), file_size);
+    if (!file) {
+        error = "could not read all of " + path;
+        return false;
+    }
     if (buf.size() < 12 || std::memcmp(buf.data(), "RIFF", 4) != 0 ||
         std::memcmp(buf.data() + 8, "WAVE", 4) != 0) {
         error = path + " is not a RIFF/WAVE file";
@@ -69,6 +81,14 @@ bool read_wav(const std::string& path, WavData& out, std::string& error) {
             channels = le16(buf.data() + body + 2);
             rate = le32(buf.data() + body + 4);
             bits = le16(buf.data() + body + 14);
+            if (format == kFormatExtensible) {
+                // The real format is the first two bytes of the sub-format GUID (offset 24).
+                if (size < 26 || available < 26) {
+                    error = "truncated WAVE_FORMAT_EXTENSIBLE fmt chunk";
+                    return false;
+                }
+                format = le16(buf.data() + body + 24);
+            }
             have_fmt = true;
         } else if (std::memcmp(chunk, "data", 4) == 0) {
             data_pos = body;
@@ -76,8 +96,8 @@ bool read_wav(const std::string& path, WavData& out, std::string& error) {
             have_data = true;
             break;
         }
+        if (size > available) break;  // chunk claims more than the file holds: stop walking
         pos = body + size + (size & 1);
-        if (pos < body) break;  // overflow guard
     }
 
     if (!have_fmt || !have_data) {
@@ -92,8 +112,8 @@ bool read_wav(const std::string& path, WavData& out, std::string& error) {
         error = "sample rate must be 16000 Hz (got " + std::to_string(rate) + ")";
         return false;
     }
-    const bool pcm16 = (format == kFormatPcm || format == kFormatExtensible) && bits == 16;
-    const bool float32 = (format == kFormatFloat || format == kFormatExtensible) && bits == 32;
+    const bool pcm16 = format == kFormatPcm && bits == 16;
+    const bool float32 = format == kFormatFloat && bits == 32;
     if (!pcm16 && !float32) {
         error = "unsupported format: need 16-bit PCM or 32-bit float";
         return false;
@@ -113,7 +133,10 @@ bool read_wav(const std::string& path, WavData& out, std::string& error) {
         out.samples.resize(n);
         for (std::size_t i = 0; i < n; ++i) {
             const std::uint32_t raw = le32(data + 4 * i);
-            std::memcpy(&out.samples[i], &raw, sizeof(float));
+            float value;
+            std::memcpy(&value, &raw, sizeof(float));
+            // NaN/Inf would poison the recursive noise and energy estimates for the whole file.
+            out.samples[i] = std::isfinite(value) ? std::min(1.0f, std::max(-1.0f, value)) : 0.0f;
         }
     }
     return true;

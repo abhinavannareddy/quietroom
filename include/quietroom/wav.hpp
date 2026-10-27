@@ -8,6 +8,9 @@
 
 namespace quietroom {
 
+// Files larger than this are refused before anything is allocated (about 2.3 hours of 16 kHz audio).
+inline constexpr std::uint64_t kMaxWavBytes = std::uint64_t{256} << 20;
+
 struct WavData {
     std::uint32_t sample_rate = 0;
     std::vector<float> samples;  // mono, -1..1

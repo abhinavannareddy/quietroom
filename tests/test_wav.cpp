@@ -2,7 +2,9 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <fstream>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -85,5 +87,100 @@ TEST(Wav, DataChunkLargerThanFileIsClampedNotOverread) {
     WavData read;
     ASSERT_TRUE(read_wav(path, read, error)) << error;
     EXPECT_EQ(read.samples.size(), 4u);
+    std::remove(path.c_str());
+}
+
+namespace {
+
+void le(std::vector<unsigned char>& b, std::uint32_t v, int bytes) {
+    for (int i = 0; i < bytes; ++i) b.push_back(static_cast<unsigned char>((v >> (8 * i)) & 0xFF));
+}
+void tag(std::vector<unsigned char>& b, const char* t) { b.insert(b.end(), t, t + 4); }
+
+// Minimal mono 16 kHz WAV with a configurable fmt chunk and raw data bytes.
+std::vector<unsigned char> make_wav(std::uint16_t format_tag, std::uint16_t bits,
+                                    const std::vector<unsigned char>& fmt_extension,
+                                    const std::vector<unsigned char>& data) {
+    std::vector<unsigned char> b;
+    tag(b, "RIFF");
+    le(b, static_cast<std::uint32_t>(36 + fmt_extension.size() + data.size()), 4);
+    tag(b, "WAVE");
+    tag(b, "fmt ");
+    le(b, static_cast<std::uint32_t>(16 + fmt_extension.size()), 4);
+    le(b, format_tag, 2);
+    le(b, 1, 2);
+    le(b, 16000, 4);
+    le(b, 16000u * bits / 8, 4);
+    le(b, bits / 8, 2);
+    le(b, bits, 2);
+    b.insert(b.end(), fmt_extension.begin(), fmt_extension.end());
+    tag(b, "data");
+    le(b, static_cast<std::uint32_t>(data.size()), 4);
+    b.insert(b.end(), data.begin(), data.end());
+    return b;
+}
+
+}  // namespace
+
+TEST(WavHostile, NonFiniteFloatSamplesAreZeroedAndLargeOnesClamped) {
+    std::vector<unsigned char> data;
+    for (float v : {std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity(), 0.5f, 1e30f}) {
+        std::uint32_t raw;
+        std::memcpy(&raw, &v, 4);
+        le(data, raw, 4);
+    }
+    const std::string path = temp_path("nonfinite.wav");
+    write_bytes(path, make_wav(3, 32, {}, data));
+    WavData read;
+    std::string error;
+    ASSERT_TRUE(read_wav(path, read, error)) << error;
+    ASSERT_EQ(read.samples.size(), 4u);
+    EXPECT_EQ(read.samples[0], 0.0f);
+    EXPECT_EQ(read.samples[1], 0.0f);
+    EXPECT_EQ(read.samples[2], 0.5f);
+    EXPECT_EQ(read.samples[3], 1.0f);
+    std::remove(path.c_str());
+}
+
+TEST(WavHostile, ChunkSizeOfFourGigabytesBeforeDataFailsCleanly) {
+    std::vector<unsigned char> b;
+    tag(b, "RIFF");
+    le(b, 100, 4);
+    tag(b, "WAVE");
+    tag(b, "junk");
+    le(b, 0xFFFFFFFFu, 4);
+    b.insert(b.end(), 32, 0);
+    const std::string path = temp_path("hugechunk.wav");
+    write_bytes(path, b);
+    WavData read;
+    std::string error;
+    EXPECT_FALSE(read_wav(path, read, error));
+    EXPECT_FALSE(error.empty());
+    std::remove(path.c_str());
+}
+
+TEST(WavHostile, ExtensibleFormatWithIntegerSubformatAndThirtyTwoBitsIsRejected) {
+    // WAVE_FORMAT_EXTENSIBLE: cbSize(2) validBits(2) channelMask(4) subFormat GUID(16).
+    std::vector<unsigned char> ext;
+    le(ext, 22, 2);
+    le(ext, 32, 2);
+    le(ext, 0, 4);
+    le(ext, 1, 2);  // sub-format 1 = integer PCM, but 32-bit: we only accept 16-bit integer PCM
+    ext.insert(ext.end(), 14, 0);
+    const std::string path = temp_path("ext32.wav");
+    write_bytes(path, make_wav(0xFFFE, 32, ext, std::vector<unsigned char>(16, 0x11)));
+    WavData read;
+    std::string error;
+    EXPECT_FALSE(read_wav(path, read, error));
+    std::remove(path.c_str());
+}
+
+TEST(WavHostile, ZeroLengthDataChunkGivesEmptySignalNotACrash) {
+    const std::string path = temp_path("emptydata.wav");
+    write_bytes(path, make_wav(1, 16, {}, {}));
+    WavData read;
+    std::string error;
+    ASSERT_TRUE(read_wav(path, read, error)) << error;
+    EXPECT_TRUE(read.samples.empty());
     std::remove(path.c_str());
 }
