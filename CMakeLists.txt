@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 project(quietroom VERSION 0.1.0 LANGUAGES CXX)
 
+if(POLICY CMP0135)
+  cmake_policy(SET CMP0135 NEW)  # fetched tarballs get extraction-time timestamps
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -34,12 +38,16 @@ function(quietroom_target_options target)
   endif()
 endfunction()
 
-add_library(quietroom src/version.cpp src/framing.cpp src/fft.cpp src/vad.cpp src/noise_estimator.cpp src/spectral_sub.cpp src/pipeline.cpp)
+add_library(quietroom src/version.cpp src/framing.cpp src/fft.cpp src/vad.cpp src/noise_estimator.cpp src/spectral_sub.cpp src/pipeline.cpp src/wav.cpp)
 target_include_directories(quietroom PUBLIC include)
 if(QUIETROOM_DOUBLE)
   target_compile_definitions(quietroom PUBLIC QUIETROOM_DOUBLE=1)
 endif()
 quietroom_target_options(quietroom)
+
+add_executable(quietroom_cli cli/main.cpp)
+target_link_libraries(quietroom_cli PRIVATE quietroom)
+quietroom_target_options(quietroom_cli)
 
 include(FetchContent)
 set(FETCHCONTENT_QUIET OFF)
