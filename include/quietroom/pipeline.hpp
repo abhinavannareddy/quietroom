@@ -12,9 +12,11 @@
 
 namespace quietroom {
 
-// Streaming noise remover. Feed it 160-sample hops; it returns 160-sample hops delayed by
-// one hop (kHop samples), i.e. the fixed 20 ms algorithmic latency is window + hop of
-// look-behind. Everything is preallocated in the constructor.
+// Streaming noise remover. Feed it 160-sample hops; it returns 160-sample hops that are the
+// input delayed by exactly one hop (10 ms). Counted from when a sample arrives until it can be
+// played, the latency is 10 to 20 ms, so the worst case is the 20 ms analysis window.
+// Everything is preallocated in the constructor. NaN/Inf input samples are treated as 0 and
+// out-of-range Config values are clamped (see Config::clamped()).
 class Pipeline {
 public:
     explicit Pipeline(const Config& config = Config{});
@@ -35,6 +37,7 @@ private:
     NoiseEstimator noise_;
     SpectralSubtractor subtractor_;
 
+    std::array<Sample, kHop> hop_;  // sanitised copy of the input hop
     std::array<Sample, kWindow> frame_;
     std::array<Complex, kFftSize> spectrum_;
     std::array<Sample, kBins> power_;

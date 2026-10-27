@@ -10,6 +10,10 @@ constexpr double kPowerEps = 1e-12;
 constexpr std::size_t kFlatnessLoBin = 4;    // 125 Hz
 constexpr std::size_t kFlatnessHiBin = 128;  // 4 kHz
 constexpr Sample kFloorFallRate = 0.2f;      // floor drops fast, rises slowly
+// If the decision has said "speech" for this long without a break, the floor is almost
+// certainly too low (e.g. the stream began with digital silence), so let it climb quickly.
+constexpr std::size_t kStuckFrames = 300;  // 3 s
+constexpr Sample kStuckRiseDb = 0.5f;
 }  // namespace
 
 Sample frame_energy_db(const Sample* hop) {
@@ -43,6 +47,7 @@ void Vad::reset() {
     floor_db_ = 0;
     has_floor_ = false;
     hangover_left_ = 0;
+    speech_run_ = 0;
 }
 
 bool Vad::update(const Sample* hop, const Sample* power) {
@@ -53,7 +58,7 @@ bool Vad::update(const Sample* hop, const Sample* power) {
     } else if (energy < floor_db_) {
         floor_db_ += kFloorFallRate * (energy - floor_db_);
     } else {
-        floor_db_ += config_.vad_floor_rise_db;
+        floor_db_ += speech_run_ > kStuckFrames ? kStuckRiseDb : config_.vad_floor_rise_db;
     }
 
     const bool above = energy > floor_db_ + config_.vad_margin_db;
@@ -62,15 +67,15 @@ bool Vad::update(const Sample* hop, const Sample* power) {
                             zero_crossing_rate(hop) > config_.vad_zcr_min;
     const bool raw_speech = strong || (above && !noise_like);
 
+    bool speech = raw_speech;
     if (raw_speech) {
         hangover_left_ = config_.hangover_frames;
-        return true;
-    }
-    if (hangover_left_ > 0) {
+    } else if (hangover_left_ > 0) {
         --hangover_left_;
-        return true;
+        speech = true;
     }
-    return false;
+    speech_run_ = speech ? speech_run_ + 1 : 0;
+    return speech;
 }
 
 }  // namespace quietroom

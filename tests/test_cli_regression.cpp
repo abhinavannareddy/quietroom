@@ -65,6 +65,7 @@ TEST(CliRegression, ImprovesSnrOnFixedNoisyClip) {
     ASSERT_TRUE(quietroom::read_wav(clean_path, clean, error)) << error;
     ASSERT_TRUE(quietroom::read_wav(noisy_path, noisy, error)) << error;
     ASSERT_TRUE(quietroom::read_wav(out_path, out, error)) << error;
+    ASSERT_EQ(noisy.samples.size(), clean.samples.size());
     ASSERT_EQ(out.samples.size(), clean.samples.size());  // CLI output stays aligned and same length
 
     const double improvement = snr_db(clean.samples, out.samples) - snr_db(clean.samples, noisy.samples);

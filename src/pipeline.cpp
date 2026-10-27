@@ -1,14 +1,17 @@
 #include "quietroom/pipeline.hpp"
 
+#include <cmath>
+
 namespace quietroom {
 
 Pipeline::Pipeline(const Config& config)
-    : config_(config),
+    : config_(config.clamped()),
       fft_(),
       ola_(),
-      vad_(config),
-      noise_(config),
-      subtractor_(config),
+      vad_(config_),
+      noise_(config_),
+      subtractor_(config_),
+      hop_{},
       frame_{},
       spectrum_{},
       power_{},
@@ -24,6 +27,11 @@ void Pipeline::reset() {
 }
 
 void Pipeline::process_frame(const Sample* in, Sample* out) noexcept {
+    // 0. Replace NaN/Inf with silence: the smoothing filters below are recursive, so one
+    //    non-finite sample would otherwise poison every later frame.
+    for (std::size_t i = 0; i < kHop; ++i) hop_[i] = std::isfinite(in[i]) ? in[i] : Sample{0};
+    in = hop_.data();
+
     // 1. Window previous + current hop, zero-pad to 512 and transform.
     ola_.analyze(in, frame_.data());
     for (std::size_t i = 0; i < kWindow; ++i) spectrum_[i] = {frame_[i], 0};

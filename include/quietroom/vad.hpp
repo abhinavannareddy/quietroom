@@ -28,6 +28,7 @@ private:
     Sample floor_db_ = 0;
     bool has_floor_ = false;
     std::size_t hangover_left_ = 0;
+    std::size_t speech_run_ = 0;  // consecutive frames decided as speech
 };
 
 }  // namespace quietroom

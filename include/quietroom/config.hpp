@@ -27,6 +27,24 @@ struct Config {
 
     // Pass the signal through FFT/IFFT untouched (used to test reconstruction).
     bool bypass = false;
+
+    // The values the library actually uses: out-of-range or NaN settings are pulled back into
+    // the range where the filters stay stable (smoothing >= 1 would freeze or diverge).
+    Config clamped() const {
+        constexpr Sample kMaxSmoothing = 0.999f;
+        const auto limit = [](Sample v, Sample lo, Sample hi) { return v < lo ? lo : (v > hi ? hi : (v == v ? v : lo)); };
+        Config c = *this;
+        c.over_subtraction = limit(over_subtraction, 0, 100);
+        c.spectral_floor = limit(spectral_floor, 0, 1);
+        c.gain_smoothing = limit(gain_smoothing, 0, kMaxSmoothing);
+        c.noise_smoothing = limit(noise_smoothing, 0, kMaxSmoothing);
+        c.vad_margin_db = limit(vad_margin_db, 0, 100);
+        c.vad_strong_margin_db = limit(vad_strong_margin_db, c.vad_margin_db, 200);
+        c.vad_floor_rise_db = limit(vad_floor_rise_db, 0, 10);
+        c.vad_flatness_max = limit(vad_flatness_max, 0, 1);
+        c.vad_zcr_min = limit(vad_zcr_min, 0, 1);
+        return c;
+    }
 };
 
 }  // namespace quietroom

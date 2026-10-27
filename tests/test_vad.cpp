@@ -111,12 +111,33 @@ TEST(Vad, FloorAdaptsToSlowlyRisingNoise) {
         const auto p = power_of(fft, f.data());
         vad.update(f.data(), p.data());
     }
-    const float before = vad.floor_db();
+    const Sample before = vad.floor_db();
     // Noise jumps by 20 dB and stays there; the floor must follow upward.
     for (int i = 0; i < 2000; ++i) {
         const auto f = src.noise(0.1f);
         const auto p = power_of(fft, f.data());
         vad.update(f.data(), p.data());
     }
-    EXPECT_GT(vad.floor_db(), before + 10.0f);
+    EXPECT_GT(vad.floor_db(), before + Sample{10});
+}
+
+TEST(Vad, RecoversWhenStreamStartsFromDigitalSilence) {
+    // A gated or muted mic gives exact zeros first, which drags the energy floor to about
+    // -100 dB. Ordinary background noise afterwards must not be called speech for long.
+    Config cfg;
+    Vad vad(cfg);
+    Fft fft;
+    Source src;
+    std::array<Sample, kHop> zeros{};
+    auto step = [&](const std::array<Sample, kHop>& f) {
+        const auto p = power_of(fft, f.data());
+        return vad.update(f.data(), p.data());
+    };
+    for (int i = 0; i < 50; ++i) step(zeros);
+    int speech_in_last_100 = 0;
+    for (int i = 0; i < 700; ++i) {
+        const bool s = step(src.noise());
+        if (i >= 600) speech_in_last_100 += s ? 1 : 0;
+    }
+    EXPECT_EQ(speech_in_last_100, 0);
 }
