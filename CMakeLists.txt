@@ -34,7 +34,7 @@ function(quietroom_target_options target)
   endif()
 endfunction()
 
-add_library(quietroom src/version.cpp src/framing.cpp src/fft.cpp)
+add_library(quietroom src/version.cpp src/framing.cpp src/fft.cpp src/vad.cpp)
 target_include_directories(quietroom PUBLIC include)
 if(QUIETROOM_DOUBLE)
   target_compile_definitions(quietroom PUBLIC QUIETROOM_DOUBLE=1)
