@@ -1,0 +1,13 @@
+build*/
+out/
+.vs/
+.vscode/
+*.o
+*.obj
+__pycache__/
+*.pyc
+.venv/
+graphify-out/
+bench_results/
+*.log
+45031.pdf

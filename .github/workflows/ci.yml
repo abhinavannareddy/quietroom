@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    name: ${{ matrix.os }} ${{ matrix.build_type }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        build_type: [Release, Debug]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Benchmark (never fails on timing)
+        if: matrix.build_type == 'Release'
+        run: ./build/bench/quietroom_bench --benchmark_format=json --benchmark_out=bench-${{ matrix.os }}.json
+      - name: Upload benchmark JSON
+        if: matrix.build_type == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-${{ matrix.os }}
+          path: bench-${{ matrix.os }}.json
+
+  sanitizers:
+    name: ASan + UBSan (Debug)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DQUIETROOM_SANITIZE=ON -DQUIETROOM_BUILD_BENCH=OFF
+      - run: cmake --build build --parallel
+      - run: ctest --test-dir build --output-on-failure
+
+  lint:
+    name: clang-format + clang-tidy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: clang-format
+        run: find include src cli bench tests -name '*.[ch]pp' | xargs clang-format --dry-run -Werror
+      - name: clang-tidy
+        run: |
+          cmake -S . -B build -DQUIETROOM_BUILD_BENCH=OFF -DQUIETROOM_BUILD_TESTS=OFF
+          find src cli -name '*.cpp' | xargs clang-tidy -p build
