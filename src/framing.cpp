@@ -8,8 +8,9 @@ OverlapAdd::OverlapAdd() : window_{}, previous_hop_{}, tail_{} {
     const double pi = std::acos(-1.0);
     for (std::size_t n = 0; n < kWindow; ++n) {
         // Periodic Hann, square-rooted.
-        const double hann = 0.5 * (1.0 - std::cos(2.0 * pi * static_cast<double>(n) /
-                                                  static_cast<double>(kWindow)));
+        const double hann =
+            0.5 *
+            (1.0 - std::cos(2.0 * pi * static_cast<double>(n) / static_cast<double>(kWindow)));
         window_[n] = static_cast<Sample>(std::sqrt(hann));
     }
 }

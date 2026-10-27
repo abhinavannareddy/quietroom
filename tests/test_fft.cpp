@@ -34,7 +34,8 @@ TEST(Fft, PureToneLandsInExpectedBin) {
     const double pi = std::acos(-1.0);
     std::array<Complex, kFftSize> data{};
     for (std::size_t i = 0; i < kFftSize; ++i) {
-        data[i] = {static_cast<Sample>(std::cos(2.0 * pi * kBin * static_cast<double>(i) / kFftSize)), 0};
+        data[i] = {
+            static_cast<Sample>(std::cos(2.0 * pi * kBin * static_cast<double>(i) / kFftSize)), 0};
     }
     fft.forward(data.data());
     std::size_t peak = 0;

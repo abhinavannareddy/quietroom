@@ -64,7 +64,8 @@ TEST(VadFeatures, ZeroCrossingRateOfKnownSignals) {
     for (std::size_t i = 0; i < kHop; ++i) {
         alt[i] = (i % 2) ? 1.0f : -1.0f;
         dc[i] = 1.0f;
-        tone[i] = static_cast<Sample>(std::sin(2.0 * std::acos(-1.0) * 1000.0 * static_cast<double>(i) / 16000.0 + 0.3));
+        tone[i] = static_cast<Sample>(
+            std::sin(2.0 * std::acos(-1.0) * 1000.0 * static_cast<double>(i) / 16000.0 + 0.3));
     }
     EXPECT_NEAR(zero_crossing_rate(alt.data()), 1.0f, 1e-6f);
     EXPECT_NEAR(zero_crossing_rate(dc.data()), 0.0f, 1e-6f);

@@ -24,9 +24,7 @@ void put16(std::vector<unsigned char>& b, std::uint16_t v) {
 void put32(std::vector<unsigned char>& b, std::uint32_t v) {
     for (int i = 0; i < 4; ++i) b.push_back(static_cast<unsigned char>((v >> (8 * i)) & 0xFF));
 }
-void put_tag(std::vector<unsigned char>& b, const char* tag) {
-    b.insert(b.end(), tag, tag + 4);
-}
+void put_tag(std::vector<unsigned char>& b, const char* tag) { b.insert(b.end(), tag, tag + 4); }
 
 constexpr std::uint16_t kFormatPcm = 1;
 constexpr std::uint16_t kFormatFloat = 3;
@@ -126,7 +124,8 @@ bool read_wav(const std::string& path, WavData& out, std::string& error) {
         const std::size_t n = data_len / 2;
         out.samples.resize(n);
         for (std::size_t i = 0; i < n; ++i) {
-            out.samples[i] = static_cast<float>(static_cast<std::int16_t>(le16(data + 2 * i))) / 32768.0f;
+            out.samples[i] =
+                static_cast<float>(static_cast<std::int16_t>(le16(data + 2 * i))) / 32768.0f;
         }
     } else {
         const std::size_t n = data_len / 4;
@@ -142,8 +141,8 @@ bool read_wav(const std::string& path, WavData& out, std::string& error) {
     return true;
 }
 
-bool write_wav(const std::string& path, const std::vector<float>& samples, std::uint32_t sample_rate,
-               std::string& error) {
+bool write_wav(const std::string& path, const std::vector<float>& samples,
+               std::uint32_t sample_rate, std::string& error) {
     const std::uint32_t data_bytes = static_cast<std::uint32_t>(samples.size() * 2);
     std::vector<unsigned char> b;
     b.reserve(44 + data_bytes);

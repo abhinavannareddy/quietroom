@@ -18,7 +18,7 @@ namespace quietroom {
 // Everything is preallocated in the constructor. NaN/Inf input samples are treated as 0 and
 // out-of-range Config values are clamped (see Config::clamped()).
 class Pipeline {
-public:
+   public:
     explicit Pipeline(const Config& config = Config{});
 
     // in and out each point at kHop samples. Does not allocate, lock or throw.
@@ -29,7 +29,7 @@ public:
     const Config& config() const { return config_; }
     void reset();
 
-private:
+   private:
     Config config_;
     Fft fft_;
     OverlapAdd ola_;

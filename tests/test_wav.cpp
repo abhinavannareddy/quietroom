@@ -17,7 +17,8 @@ std::string temp_path(const char* name) { return std::string("quietroom_test_") 
 
 void write_bytes(const std::string& path, const std::vector<unsigned char>& bytes) {
     std::ofstream f(path, std::ios::binary);
-    f.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+    f.write(reinterpret_cast<const char*>(bytes.data()),
+            static_cast<std::streamsize>(bytes.size()));
 }
 }  // namespace
 
@@ -31,7 +32,8 @@ TEST(Wav, RoundTripsSixteenBitMono) {
     ASSERT_TRUE(read_wav(path, read, error)) << error;
     ASSERT_EQ(read.samples.size(), samples.size());
     EXPECT_EQ(read.sample_rate, kSampleRate);
-    for (std::size_t i = 0; i < samples.size(); ++i) EXPECT_NEAR(read.samples[i], samples[i], 1.0f / 32768.0f);
+    for (std::size_t i = 0; i < samples.size(); ++i)
+        EXPECT_NEAR(read.samples[i], samples[i], 1.0f / 32768.0f);
     std::remove(path.c_str());
 }
 
@@ -124,7 +126,8 @@ std::vector<unsigned char> make_wav(std::uint16_t format_tag, std::uint16_t bits
 
 TEST(WavHostile, NonFiniteFloatSamplesAreZeroedAndLargeOnesClamped) {
     std::vector<unsigned char> data;
-    for (float v : {std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity(), 0.5f, 1e30f}) {
+    for (float v : {std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity(),
+                    0.5f, 1e30f}) {
         std::uint32_t raw;
         std::memcpy(&raw, &v, 4);
         le(data, raw, 4);

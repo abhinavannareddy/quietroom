@@ -10,7 +10,7 @@ namespace quietroom {
 // Because w^2 is a periodic Hann window, overlapped synthesis sums to exactly 1 and an
 // untouched signal comes back delayed by one hop (kHop samples).
 class OverlapAdd {
-public:
+   public:
     OverlapAdd();
 
     // Builds the windowed 320-sample frame [previous hop | hop] from a new 160-sample hop.
@@ -22,7 +22,7 @@ public:
     void reset();
     const Sample* window() const { return window_.data(); }
 
-private:
+   private:
     std::array<Sample, kWindow> window_;
     std::array<Sample, kHop> previous_hop_;
     std::array<Sample, kHop> tail_;

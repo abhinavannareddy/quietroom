@@ -14,7 +14,7 @@ Sample spectral_flatness(const Sample* power);
 // Voice activity detector: energy against an adaptive floor, with ZCR and spectral flatness
 // used to reject weak noise-like frames, then a hangover so word endings are not clipped.
 class Vad {
-public:
+   public:
     explicit Vad(const Config& config);
 
     // Returns true if the frame (including hangover) counts as speech.
@@ -23,7 +23,7 @@ public:
     void reset();
     Sample floor_db() const { return floor_db_; }
 
-private:
+   private:
     Config config_;
     Sample floor_db_ = 0;
     bool has_floor_ = false;

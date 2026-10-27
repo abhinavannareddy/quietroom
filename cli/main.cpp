@@ -104,7 +104,8 @@ bool paths_are_distinct(const Options& opt) {
     const std::string* paths[] = {&opt.input, &opt.output, &opt.vad_csv, &opt.json};
     for (std::size_t i = 0; i < 4; ++i) {
         for (std::size_t j = i + 1; j < 4; ++j) {
-            if (!paths[i]->empty() && !paths[j]->empty() && same_file(*paths[i], *paths[j])) return false;
+            if (!paths[i]->empty() && !paths[j]->empty() && same_file(*paths[i], *paths[j]))
+                return false;
         }
     }
     return true;
@@ -112,7 +113,8 @@ bool paths_are_distinct(const Options& opt) {
 
 double percentile(std::vector<double> sorted, double p) {
     if (sorted.empty()) return 0;
-    const std::size_t idx = static_cast<std::size_t>(p * static_cast<double>(sorted.size() - 1) + 0.5);
+    const std::size_t idx =
+        static_cast<std::size_t>(p * static_cast<double>(sorted.size() - 1) + 0.5);
     return sorted[idx];
 }
 
@@ -125,7 +127,8 @@ int run(int argc, char** argv) {
         return 2;
     }
     if (!paths_are_distinct(opt)) {
-        std::fprintf(stderr, "error: input, output, --vad-csv and --json must be different files\n");
+        std::fprintf(stderr,
+                     "error: input, output, --vad-csv and --json must be different files\n");
         return 2;
     }
 
@@ -195,8 +198,8 @@ int run(int argc, char** argv) {
     std::printf("frames: %zu (%.2f s)\n", hops, static_cast<double>(length) / kSampleRate);
     std::printf("compute per frame: mean %.1f us, p50 %.1f us, p99 %.1f us, max %.1f us\n", mean,
                 percentile(sorted, 0.50), percentile(sorted, 0.99), percentile(sorted, 1.0));
-    std::printf("deadline misses: %zu over 10 ms, %zu over 2 ms; real-time factor %.5f\n", over10, over2,
-                rtf);
+    std::printf("deadline misses: %zu over 10 ms, %zu over 2 ms; real-time factor %.5f\n", over10,
+                over2, rtf);
     std::printf("VAD: %zu speech frames, %zu non-speech frames\n", speech, hops - speech);
 
     if (vad_file.is_open()) {
@@ -204,9 +207,11 @@ int run(int argc, char** argv) {
     }
     if (json_file.is_open()) {
         std::ofstream& f = json_file;
-        f << "{\"frames\": " << hops << ", \"mean_us\": " << mean << ", \"p50_us\": " << percentile(sorted, 0.50)
-          << ", \"p99_us\": " << percentile(sorted, 0.99) << ", \"max_us\": " << percentile(sorted, 1.0)
-          << ", \"over_2ms\": " << over2 << ", \"over_10ms\": " << over10 << ", \"rtf\": " << rtf
+        f << "{\"frames\": " << hops << ", \"mean_us\": " << mean
+          << ", \"p50_us\": " << percentile(sorted, 0.50)
+          << ", \"p99_us\": " << percentile(sorted, 0.99)
+          << ", \"max_us\": " << percentile(sorted, 1.0) << ", \"over_2ms\": " << over2
+          << ", \"over_10ms\": " << over10 << ", \"rtf\": " << rtf
           << ", \"speech_frames\": " << speech << ", \"frame_us\": [";
         for (std::size_t i = 0; i < timed.size(); ++i) f << (i ? "," : "") << timed[i];
         f << "]}\n";

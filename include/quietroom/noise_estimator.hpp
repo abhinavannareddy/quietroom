@@ -11,7 +11,7 @@ namespace quietroom {
 // unconditionally (assumed noise-only); afterwards it is updated with exponential smoothing,
 // and only on frames the VAD calls non-speech.
 class NoiseEstimator {
-public:
+   public:
     explicit NoiseEstimator(const Config& config);
 
     void update(const Sample* power, bool is_speech);
@@ -20,7 +20,7 @@ public:
     const Sample* estimate() const { return noise_.data(); }
     bool initialised() const { return frames_ >= config_.noise_init_frames; }
 
-private:
+   private:
     Config config_;
     std::array<Sample, kBins> noise_;
     std::size_t frames_ = 0;

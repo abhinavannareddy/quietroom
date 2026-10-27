@@ -57,7 +57,8 @@ TEST(CliRegression, ImprovesSnrOnFixedNoisyClip) {
     const std::string clean_path = data + "/speech/3000-15664-0000.wav";
     const std::string out_path = "quietroom_cli_regression_out.wav";
 
-    const std::string args = "\"" + noisy_path + "\" \"" + out_path + "\" > quietroom_cli_regression_log.txt";
+    const std::string args =
+        "\"" + noisy_path + "\" \"" + out_path + "\" > quietroom_cli_regression_log.txt";
     ASSERT_EQ(run_cli(args), 0) << "CLI failed with args: " << args;
 
     quietroom::WavData clean, noisy, out;
@@ -66,9 +67,11 @@ TEST(CliRegression, ImprovesSnrOnFixedNoisyClip) {
     ASSERT_TRUE(quietroom::read_wav(noisy_path, noisy, error)) << error;
     ASSERT_TRUE(quietroom::read_wav(out_path, out, error)) << error;
     ASSERT_EQ(noisy.samples.size(), clean.samples.size());
-    ASSERT_EQ(out.samples.size(), clean.samples.size());  // CLI output stays aligned and same length
+    ASSERT_EQ(out.samples.size(),
+              clean.samples.size());  // CLI output stays aligned and same length
 
-    const double improvement = snr_db(clean.samples, out.samples) - snr_db(clean.samples, noisy.samples);
+    const double improvement =
+        snr_db(clean.samples, out.samples) - snr_db(clean.samples, noisy.samples);
     RecordProperty("snr_improvement_db", std::to_string(improvement));
     EXPECT_GT(improvement, kSnrImprovementFloorDb);
 
@@ -79,6 +82,8 @@ TEST(CliRegression, ImprovesSnrOnFixedNoisyClip) {
 TEST(CliRegression, MissingInputFailsWithNonZeroExit) {
     // Exit code 1 is the CLI's "could not read input" code; 2 would mean bad usage, and a
     // shell/quoting failure would give yet another code, so this cannot pass by accident.
-    EXPECT_EQ(run_cli("does_not_exist.wav quietroom_cli_missing_out.wav > quietroom_cli_missing_log.txt 2>&1"), 1);
+    EXPECT_EQ(run_cli("does_not_exist.wav quietroom_cli_missing_out.wav > "
+                      "quietroom_cli_missing_log.txt 2>&1"),
+              1);
     std::remove("quietroom_cli_missing_log.txt");
 }
