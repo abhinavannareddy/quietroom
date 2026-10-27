@@ -43,6 +43,7 @@ COMPILER="$("$COMPILER_PATH" --version 2>/dev/null | head -1)"
 [ -n "$COMPILER" ] || COMPILER="$(basename "$COMPILER_PATH")"
 FLAGS="$(grep -m1 '^CMAKE_CXX_FLAGS_RELEASE:' "$BUILD_DIR/CMakeCache.txt" | cut -d= -f2)"
 "$PYTHON" python/evaluate.py --cli "$CLI" --compiler "$COMPILER" --flags "$FLAGS -std=c++17"
+"$PYTHON" python/make_figures.py --cli "$CLI"
 "$PYTHON" python/plot_pipeline.py
 
 echo

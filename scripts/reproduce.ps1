@@ -32,6 +32,7 @@ $compiler = (& $compilerPath --version 2>$null | Select-Object -First 1)
 if (-not $compiler) { $compiler = Split-Path -Leaf $compilerPath }
 $flags = ($cache | Where-Object { $_ -like "CMAKE_CXX_FLAGS_RELEASE:*" } | Select-Object -First 1) -replace "^[^=]*=", ""
 python python\evaluate.py --cli $cli --compiler $compiler --flags "$flags -std=c++17"
+python python\make_figures.py --cli $cli
 python python\plot_pipeline.py
 
 Write-Host ""

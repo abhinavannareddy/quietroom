@@ -38,3 +38,10 @@ checking its license (CC BY 4.0 at the time of writing) and keeping only short c
 LibriSpeech has no speech/non-speech annotation. The VAD labels used in the evaluation are
 derived from the clean clips (a 10 ms frame counts as speech if its energy is within 35 dB of
 the loudest frame). They are not human annotations.
+
+## Demo audio
+
+`docs/demo/*.wav` are before/after pairs made from `data/speech/3000-15664-0000.wav` with
+synthetic pink noise or the babble file above at 5 dB SNR, and the output of `quietroom_cli`.
+They are derivatives of LibriSpeech and carry the same CC BY 4.0 terms. Regenerate them with
+`python python/make_figures.py --cli build/quietroom_cli`.
