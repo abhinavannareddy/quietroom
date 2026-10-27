@@ -6,8 +6,11 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <exception>
+#include <filesystem>
 #include <fstream>
 #include <string>
+#include <system_error>
 #include <vector>
 
 #include "quietroom/pipeline.hpp"
@@ -71,7 +74,7 @@ bool parse_args(int argc, char** argv, Options& opt) {
         } else if (a == "--bypass") {
             opt.config.bypass = true;
         } else if (a == "--vad-csv" || a == "--json") {
-            if (i + 1 >= argc) {
+            if (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0) {
                 std::fprintf(stderr, "error: %s needs a file name\n", a.c_str());
                 return false;
             }
@@ -89,6 +92,24 @@ bool parse_args(int argc, char** argv, Options& opt) {
     return true;
 }
 
+bool same_file(const std::string& a, const std::string& b) {
+    std::error_code ec;
+    if (std::filesystem::equivalent(a, b, ec) && !ec) return true;  // follows links, if both exist
+    return a == b;
+}
+
+// Input, output, CSV and JSON must be four different files: otherwise one would be truncated
+// while another is still being read or written.
+bool paths_are_distinct(const Options& opt) {
+    const std::string* paths[] = {&opt.input, &opt.output, &opt.vad_csv, &opt.json};
+    for (std::size_t i = 0; i < 4; ++i) {
+        for (std::size_t j = i + 1; j < 4; ++j) {
+            if (!paths[i]->empty() && !paths[j]->empty() && same_file(*paths[i], *paths[j])) return false;
+        }
+    }
+    return true;
+}
+
 double percentile(std::vector<double> sorted, double p) {
     if (sorted.empty()) return 0;
     const std::size_t idx = static_cast<std::size_t>(p * static_cast<double>(sorted.size() - 1) + 0.5);
@@ -97,11 +118,26 @@ double percentile(std::vector<double> sorted, double p) {
 
 }  // namespace
 
-int main(int argc, char** argv) {
+int run(int argc, char** argv) {
     Options opt;
     if (!parse_args(argc, argv, opt)) {
         usage();
         return 2;
+    }
+    if (!paths_are_distinct(opt)) {
+        std::fprintf(stderr, "error: input, output, --vad-csv and --json must be different files\n");
+        return 2;
+    }
+
+    // Open the optional outputs first so a bad path fails before any work is done.
+    std::ofstream vad_file, json_file;
+    if (!opt.vad_csv.empty() && (vad_file.open(opt.vad_csv), !vad_file)) {
+        std::fprintf(stderr, "error: cannot create %s\n", opt.vad_csv.c_str());
+        return 1;
+    }
+    if (!opt.json.empty() && (json_file.open(opt.json), !json_file)) {
+        std::fprintf(stderr, "error: cannot create %s\n", opt.json.c_str());
+        return 1;
     }
 
     WavData wav;
@@ -163,20 +199,11 @@ int main(int argc, char** argv) {
                 rtf);
     std::printf("VAD: %zu speech frames, %zu non-speech frames\n", speech, hops - speech);
 
-    if (!opt.vad_csv.empty()) {
-        std::ofstream f(opt.vad_csv);
-        if (!f) {
-            std::fprintf(stderr, "error: cannot create %s\n", opt.vad_csv.c_str());
-            return 1;
-        }
-        for (std::size_t h = 0; h < hops; ++h) f << static_cast<int>(decisions[h]) << '\n';
+    if (vad_file.is_open()) {
+        for (std::size_t h = 0; h < hops; ++h) vad_file << static_cast<int>(decisions[h]) << '\n';
     }
-    if (!opt.json.empty()) {
-        std::ofstream f(opt.json);
-        if (!f) {
-            std::fprintf(stderr, "error: cannot create %s\n", opt.json.c_str());
-            return 1;
-        }
+    if (json_file.is_open()) {
+        std::ofstream& f = json_file;
         f << "{\"frames\": " << hops << ", \"mean_us\": " << mean << ", \"p50_us\": " << percentile(sorted, 0.50)
           << ", \"p99_us\": " << percentile(sorted, 0.99) << ", \"max_us\": " << percentile(sorted, 1.0)
           << ", \"over_2ms\": " << over2 << ", \"over_10ms\": " << over10 << ", \"rtf\": " << rtf
@@ -185,4 +212,13 @@ int main(int argc, char** argv) {
         f << "]}\n";
     }
     return 0;
+}
+
+int main(int argc, char** argv) {
+    try {
+        return run(argc, argv);
+    } catch (const std::exception& e) {  // e.g. std::bad_alloc on a huge but legal file
+        std::fprintf(stderr, "error: %s\n", e.what());
+        return 1;
+    }
 }
