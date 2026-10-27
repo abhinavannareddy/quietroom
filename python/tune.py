@@ -1,8 +1,9 @@
 """Parameter sweep for the spectral-subtraction defaults, with a held-out check.
 
 Tunes on the first clip of each speaker and reports the winner on the other clips, which the
-sweep never saw. Objective: mean SNR improvement at 5 dB input over all four noise types,
-minus a penalty if the speech-region SNR gain falls (so we do not just erase speech).
+sweep never saw. Objective: mean SNR improvement at 5 dB input over all four noise types. The
+speech-region SNR gain is printed next to it so over-aggressive settings are visible, and it only
+breaks exact ties; it is not a penalty term.
 
     python python/tune.py --cli build/quietroom_cli[.exe]
 """

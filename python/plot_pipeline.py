@@ -53,7 +53,7 @@ def main() -> None:
     ax.text(0.2, 0.75, "G = sqrt( max(P - alpha*N, beta*P) / P ),  then  G[t] = s*G[t-1] + (1-s)*G",
             fontsize=10, color=INK, family="monospace")
     ax.text(0.2, 0.25, "All buffers are preallocated: process_frame() does not allocate. "
-            "Algorithmic latency: 20 ms (one 320-sample window).", fontsize=9, color=MUTED)
+            "Output is the input delayed by one hop; 10 to 20 ms from arrival to playable.", fontsize=9, color=MUTED)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUT, dpi=150, bbox_inches="tight")
     print(f"wrote {OUT}")
