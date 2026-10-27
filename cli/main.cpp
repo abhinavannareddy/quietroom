@@ -4,6 +4,7 @@
 // one-hop delay is removed here).
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
@@ -111,10 +112,11 @@ bool paths_are_distinct(const Options& opt) {
     return true;
 }
 
-double percentile(std::vector<double> sorted, double p) {
+// Nearest-rank percentile of an already sorted vector, p in [0, 1].
+double percentile(const std::vector<double>& sorted, double p) {
     if (sorted.empty()) return 0;
-    const std::size_t idx =
-        static_cast<std::size_t>(p * static_cast<double>(sorted.size() - 1) + 0.5);
+    const auto idx =
+        static_cast<std::size_t>(std::llround(p * static_cast<double>(sorted.size() - 1)));
     return sorted[idx];
 }
 

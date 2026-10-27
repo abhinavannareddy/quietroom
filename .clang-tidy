@@ -1,3 +1,5 @@
-Checks: 'bugprone-*,performance-*,modernize-*,-modernize-use-trailing-return-type'
+# Style-only families (nodiscard everywhere, default member initialisers, C arrays) are off:
+# they would rewrite working code without catching bugs. bugprone-* and performance-* stay on.
+Checks: 'bugprone-*,performance-*,modernize-*,-modernize-use-trailing-return-type,-modernize-use-nodiscard,-modernize-use-default-member-init,-modernize-avoid-c-arrays'
 WarningsAsErrors: ''
 HeaderFilterRegex: 'include/quietroom/.*'
