@@ -29,8 +29,8 @@ struct Options {
     Config config;
 };
 
-void usage() {
-    std::fprintf(stderr,
+void usage(std::FILE* out = stderr) {
+    std::fprintf(out,
                  "usage: quietroom_cli in.wav out.wav [options]\n"
                  "  --over-subtraction X   noise scale alpha, >= 0        (default 3.0)\n"
                  "  --floor X              spectral floor beta, 0..1      (default 0.02)\n"
@@ -123,6 +123,13 @@ double percentile(const std::vector<double>& sorted, double p) {
 }  // namespace
 
 int run(int argc, char** argv) {
+    for (int i = 1; i < argc; ++i) {
+        const std::string arg = argv[i];
+        if (arg == "--help" || arg == "-h") {
+            usage(stdout);
+            return 0;
+        }
+    }
     Options opt;
     if (!parse_args(argc, argv, opt)) {
         usage();
