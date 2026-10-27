@@ -1,0 +1,8 @@
+{
+  "cpu": "AMD Ryzen 7 7730U with Radeon Graphics",
+  "os": "Windows-11-10.0.26200-SP0",
+  "logical_cpus": 16,
+  "compiler": "clang 21.1.0 via zig 0.16 (Windows)",
+  "build_flags": "-O3 -DNDEBUG -std=c++17",
+  "python": "3.13.7"
+}
