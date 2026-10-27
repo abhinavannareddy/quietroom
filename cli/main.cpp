@@ -28,9 +28,9 @@ struct Options {
 void usage() {
     std::fprintf(stderr,
                  "usage: quietroom_cli in.wav out.wav [options]\n"
-                 "  --over-subtraction X   noise scale alpha, >= 0        (default 2.0)\n"
-                 "  --floor X              spectral floor beta, 0..1      (default 0.1)\n"
-                 "  --smoothing X          gain smoothing, 0..<1          (default 0.6)\n"
+                 "  --over-subtraction X   noise scale alpha, >= 0        (default 3.0)\n"
+                 "  --floor X              spectral floor beta, 0..1      (default 0.02)\n"
+                 "  --smoothing X          gain smoothing, 0..<1          (default 0.3)\n"
                  "  --hangover N           VAD hangover frames            (default 8)\n"
                  "  --bypass               FFT/IFFT only, no denoising\n"
                  "  --vad-csv FILE         write one 0/1 VAD decision per 10 ms frame\n"

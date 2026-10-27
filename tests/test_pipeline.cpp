@@ -48,7 +48,7 @@ TEST(Pipeline, ConfigChangesOutput) {
     const auto noisy =
         testsig::mix(clip.samples, testsig::white_noise(clip.samples.size(), 5), 5.0);
     Config a, b;
-    b.over_subtraction = 3.0f;
+    b.over_subtraction = a.over_subtraction * 0.5f;  // any value different from the default
     Pipeline pa(a), pb(b);
     EXPECT_NE(run(pa, noisy), run(pb, noisy));
 }

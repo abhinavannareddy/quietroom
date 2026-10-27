@@ -9,9 +9,9 @@ namespace quietroom {
 // All tunable parameters (F8). Defaults were tuned on the clips in data/ and python/evaluate.py.
 struct Config {
     // Spectral subtraction.
-    Sample over_subtraction = 2.0f;  // alpha: how much of the noise estimate to remove
-    Sample spectral_floor = 0.1f;    // beta: minimum remaining fraction of the noisy power
-    Sample gain_smoothing = 0.6f;    // 0 = no smoothing, closer to 1 = slower gain changes
+    Sample over_subtraction = 3.0f;  // alpha: how much of the noise estimate to remove
+    Sample spectral_floor = 0.02f;   // beta: minimum remaining fraction of the noisy power
+    Sample gain_smoothing = 0.3f;    // 0 = no smoothing, closer to 1 = slower gain changes
 
     // Noise estimate.
     std::size_t noise_init_frames = 20;  // 200 ms assumed noise-only at start
