@@ -14,21 +14,35 @@ namespace {
 std::atomic<std::size_t> g_allocations{0};
 }
 
+// The whole family is replaced, including the nothrow forms the standard library uses
+// internally: mixing our free() with another allocator's operator new is an ASan error.
 void* operator new(std::size_t size) {
     g_allocations.fetch_add(1, std::memory_order_relaxed);
     if (void* p = std::malloc(size)) return p;
     throw std::bad_alloc();
 }
 void* operator new[](std::size_t size) { return operator new(size); }
+void* operator new(std::size_t size, const std::nothrow_t&) noexcept {
+    g_allocations.fetch_add(1, std::memory_order_relaxed);
+    return std::malloc(size);
+}
+void* operator new[](std::size_t size, const std::nothrow_t&) noexcept {
+    return operator new(size, std::nothrow);
+}
 void operator delete(void* p) noexcept { std::free(p); }
 void operator delete[](void* p) noexcept { std::free(p); }
 void operator delete(void* p, std::size_t) noexcept { std::free(p); }
 void operator delete[](void* p, std::size_t) noexcept { std::free(p); }
+void operator delete(void* p, const std::nothrow_t&) noexcept { std::free(p); }
+void operator delete[](void* p, const std::nothrow_t&) noexcept { std::free(p); }
+
+// A volatile sink makes the allocation observable, so the compiler may not elide new/delete.
+int* volatile g_sink = nullptr;
 
 TEST(NoAllocation, HookActuallyCountsAllocations) {
     const std::size_t before = g_allocations.load();
-    auto* value = new int(1);
-    delete value;
+    g_sink = new int(1);
+    delete g_sink;
     EXPECT_GT(g_allocations.load(), before);
 }
 

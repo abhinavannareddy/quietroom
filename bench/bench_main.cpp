@@ -82,11 +82,14 @@ static void BM_Fft512(benchmark::State& state) {
     Fft fft;
     std::vector<Complex> data(kFftSize);
     for (std::size_t i = 0; i < kFftSize; ++i) data[i] = {static_cast<Sample>(i % 7), 0};
+    // forward() alone grows the values by ~sqrt(512) each pass and overflows to Inf, so time a
+    // forward + inverse pair (the inverse scales by 1/N and restores the input).
     for (auto _ : state) {
         fft.forward(data.data());
+        fft.inverse(data.data());
         benchmark::DoNotOptimize(data.data());
     }
 }
-BENCHMARK(BM_Fft512)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_Fft512)->Name("BM_Fft512_ForwardPlusInverse")->Unit(benchmark::kMicrosecond);
 
 BENCHMARK_MAIN();
